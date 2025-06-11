@@ -4,39 +4,47 @@ Minimal PyTorch regression model for predicting semiconductor stock prices.
 
 # Demo Commands
 
-## Step 1: Train the Model
-```bash
-python train.py
-```
-Creates model.pth and metrics.json. The model will now learn patterns from correlated data.
+## Production-Style Flow
 
-## Step 2: Run Unit Tests  
+### Step 1: Run Unit Tests
 ```bash
 pytest test_model.py -v
 ```
-All 8 tests should pass
+Verify code quality first - all 8 tests should pass.
 
-## Step 3: Validate Data
+### Step 2: Validate Data Quality  
 ```bash
 python validation.py
 ```
-Shows clear summary:
+Check data quality before training:
 - Good data: PASSED
 - Bad data: FAILED (7 issues) <- This is correct!
-- Model performance metrics
 
-## Optional: Show Bad Data
+### Step 3: Train Model
+```bash
+python train.py
+```
+Train only after confirming data quality. Shows Loss, MAE, and R² progress.
+
+### Step 4: Final Validation
+```bash
+python validation.py
+```
+Now includes model performance metrics with the data validation.
+
+## Quick One-Liner
+```bash
+pytest test_model.py -v && python validation.py && python train.py && python validation.py
+```
+
+## Clean Start
+```bash
+rm -rf gx/ model.pth metrics.json
+```
+
+## Optional: Examine Bad Data
 ```bash
 python data_bad.py
 ```
-Shows examples of problematic data
 
-## Clean Start
-If you ran the old version, delete model.pth and metrics.json first:
-```bash
-rm -f model.pth metrics.json
-python train.py
-```
-
-## That's all
-Everything works out of the box with clear output.
+That's the complete workflow - test code, validate data, train model, verify results.
