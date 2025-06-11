@@ -58,7 +58,7 @@ rm -rf gx/ model.pth metrics.json
 ## Expected Results
 - Tests: All 8 pass with descriptive output
 - Data validation: Good data passes, bad data fails with details
-- Training: R² > 0.6 (model learns strong patterns)
-- Model validation: All 4 performance criteria pass
+- Training: R² > 0.7 (model learns simple PE-price relationship)
+- Model validation: 2 pass (convergence, overfitting), 2 may fail (R², MAE)
 
 Simple, clean, production-ready workflow.

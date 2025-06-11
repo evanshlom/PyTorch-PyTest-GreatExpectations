@@ -159,7 +159,7 @@ def validate_model_performance(metrics_path='metrics.json'):
     print("="*60)
     print(f"Training samples: 160")
     print(f"Validation samples: 40")
-    print(f"Epochs trained: 50")
+    print(f"Epochs trained: 100")
     print(f"Final learning achieved: {(1 - metrics['train_loss'][-1]/metrics['train_loss'][0])*100:.1f}% loss reduction")
     
     print("\n" + "-"*60)

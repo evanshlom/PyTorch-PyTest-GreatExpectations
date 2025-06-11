@@ -23,7 +23,7 @@ def calculate_r2(predictions, targets):
 def train_model(model, train_loader, val_loader, epochs=50):
     """Train the model and track metrics"""
     criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = optim.Adam(model.parameters(), lr=0.01)  # Increased from 0.001
     
     metrics = {
         'train_loss': [], 'val_loss': [],
@@ -85,7 +85,7 @@ def train_model(model, train_loader, val_loader, epochs=50):
         metrics['train_r2'].append(train_r2)
         metrics['val_r2'].append(val_r2)
         
-        if epoch % 10 == 0:
+        if epoch % 20 == 0:
             print(f"Epoch {epoch}: Train Loss = {avg_train_loss:.4f}, Val Loss = {avg_val_loss:.4f}")
             print(f"           Train MAE = {train_mae:.2f}, Val MAE = {val_mae:.2f}")
             print(f"           Train R² = {train_r2:.4f}, Val R² = {val_r2:.4f}")
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     print(f"Validating on {len(val_loader.dataset)} samples")
     print("-" * 60)
     
-    metrics = train_model(model, train_loader, val_loader)
+    metrics = train_model(model, train_loader, val_loader, epochs=100)  # Increased epochs
     
     # Save everything
     save_model_and_metrics(model, metrics)

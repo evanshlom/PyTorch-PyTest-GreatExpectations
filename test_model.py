@@ -63,11 +63,11 @@ def test_create_sample_data():
                        'profit_10k', 'stock_price']
     assert list(df.columns) == expected_columns
     
-    # Check that stock price has some correlation with features
-    # (since we added correlations in create_sample_data)
+    # Check that stock price has correlation with PE ratio
+    # (since we made price mainly depend on PE)
     pe_correlation = df['pe_ratio'].corr(df['stock_price'])
-    assert pe_correlation > 0.3, "Stock price should correlate with PE ratio"
-    print(f"Data generation: Created correlated data (r={pe_correlation:.2f})")
+    assert pe_correlation > 0.9, "Stock price should strongly correlate with PE ratio"
+    print(f"Data generation: Created PE-correlated data (r={pe_correlation:.2f})")
 
 
 def test_normalize_features():

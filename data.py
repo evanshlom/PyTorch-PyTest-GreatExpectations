@@ -30,34 +30,25 @@ def create_sample_data(n_samples=100):
     """Generate synthetic stock data with strong correlations for demo"""
     np.random.seed(42)
     
-    # Create base features with stronger correlations
+    # Create base features
     pe_ratio = np.random.uniform(10, 50, n_samples)
     market_cap = np.random.uniform(1e9, 1e11, n_samples)
     dividend_yield = np.random.uniform(0, 5, n_samples)
     trading_volume = np.random.uniform(1e6, 1e8, n_samples)
     employee_count = np.random.randint(1000, 50000, n_samples)
-    profit_8k = np.random.uniform(-1e8, 5e8, n_samples)
-    profit_10k = np.random.uniform(-1e8, 5e8, n_samples)
     
-    # Create stock price with STRONG correlations and less noise
-    # Price = base + strong feature contributions + small noise
-    base_price = 100
+    # Make profits correlated with market cap
+    profit_base = (market_cap / 1e9) * 5e6
+    profit_8k = profit_base * np.random.uniform(0.8, 1.2, n_samples)
+    profit_10k = profit_base * np.random.uniform(0.9, 1.3, n_samples)
     
-    # Strong correlations
-    pe_contribution = pe_ratio * 5  # $5 per PE point
-    market_cap_contribution = (market_cap / 1e9) * 1.5  # $1.50 per billion market cap
-    profit_contribution = (profit_10k / 1e8) * 20  # $20 per 100M profit
-    dividend_penalty = dividend_yield * -10  # Higher dividends = mature company = lower growth
-    
-    # Much smaller noise
-    noise = np.random.normal(0, 5, n_samples)  # Reduced from 20 to 5
-    
-    stock_price = (base_price + 
-                   pe_contribution + 
-                   market_cap_contribution + 
-                   profit_contribution + 
-                   dividend_penalty + 
-                   noise)
+    # EXTREMELY SIMPLE: Price depends mainly on just PE ratio
+    # This makes it trivial for the neural network to learn
+    stock_price = (
+        100 +  # Base price
+        (pe_ratio - 30) * 5 +  # PE deviation from 30 affects price strongly
+        np.random.normal(0, 1, n_samples)  # Minimal noise
+    )
     
     # Ensure positive prices
     stock_price = np.maximum(stock_price, 10)
