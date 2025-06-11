@@ -1,6 +1,6 @@
 # PyTorch Stock Price Prediction
 
-Minimal PyTorch regression model with data validation using Great Expectations.
+PyTorch model training with PyTest unit testing, and Great Expectations schema checks and metrics validation. **See "Production Workflow" section below for simple quick instructions.**
 
 ## Files
 - `model.py` - Neural network definition
