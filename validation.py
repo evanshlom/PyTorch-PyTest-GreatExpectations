@@ -60,9 +60,13 @@ def create_expectations():
     for column in df.columns:
         validator.expect_column_values_to_not_be_null(column=column)
     
-    # Save suite
-    validator.save_expectation_suite(discard_failed_expectations=False)
+    # Save suite - IMPORTANT: use context.save_expectation_suite
+    context.save_expectation_suite(
+        expectation_suite=validator.get_expectation_suite(),
+        expectation_suite_name="stock_data_suite"
+    )
     
+    print("✅ Expectation suite created and saved!")
     return validator
 
 
@@ -70,29 +74,37 @@ def validate_data(df):
     """Run validation on new data"""
     context = gx.get_context()
     
-    # Create checkpoint
-    checkpoint = context.add_or_update_checkpoint(
-        name="stock_data_checkpoint",
-        validations=[{
-            "batch_request": {
-                "datasource_name": "stock_datasource",
-                "data_asset_name": "stock_data",
-                "options": {"dataframe": df}
-            },
-            "expectation_suite_name": "stock_data_suite"
-        }]
-    )
+    # Add datasource and data asset for validation
+    datasource = context.sources.add_or_update_pandas("stock_datasource")
+    data_asset = datasource.add_dataframe_asset("stock_data_validation")
+    batch_request = data_asset.build_batch_request(dataframe=df)
     
-    # Run validation
-    results = checkpoint.run()
-    
-    # Check if validation passed
-    if results.success:
-        print("Data validation passed!")
-    else:
-        print("Data validation failed!")
+    # Get validator with existing suite
+    try:
+        validator = context.get_validator(
+            batch_request=batch_request,
+            expectation_suite_name="stock_data_suite"
+        )
         
-    return results
+        # Run validation
+        results = validator.validate()
+        
+        # Check if validation passed
+        if results.success:
+            print("✅ Data validation passed!")
+        else:
+            print("❌ Data validation failed!")
+            print("\nFailed expectations:")
+            for result in results.results:
+                if not result.success:
+                    print(f"  - {result.expectation_config.expectation_type}")
+                    print(f"    {result.result}")
+            
+        return results
+    except Exception as e:
+        print(f"Error during validation: {e}")
+        print("Make sure to run create_expectations() first!")
+        return None
 
 
 def check_model_performance(metrics_path='metrics.json'):
@@ -103,15 +115,26 @@ def check_model_performance(metrics_path='metrics.json'):
     # Performance checks
     final_train_loss = metrics['train_loss'][-1]
     final_val_loss = metrics['val_loss'][-1]
+    final_train_mae = metrics['train_mae'][-1]
+    final_val_mae = metrics['val_mae'][-1]
+    final_train_r2 = metrics['train_r2'][-1]
+    final_val_r2 = metrics['val_r2'][-1]
     
     checks = {
         'final_train_loss_reasonable': final_train_loss < 1000,
         'final_val_loss_reasonable': final_val_loss < 1000,
         'not_overfitting': final_val_loss < final_train_loss * 2,
-        'model_converged': metrics['train_loss'][-1] < metrics['train_loss'][0] * 0.5
+        'model_converged': metrics['train_loss'][-1] < metrics['train_loss'][0] * 0.5,
+        'mae_reasonable': final_val_mae < 100,  # MAE less than $100
+        'r2_positive': final_val_r2 > 0  # Model better than mean prediction
     }
     
     print("\n📊 Model Performance Health Check:")
+    print(f"Final Train Loss: {final_train_loss:.2f}, Val Loss: {final_val_loss:.2f}")
+    print(f"Final Train MAE: ${final_train_mae:.2f}, Val MAE: ${final_val_mae:.2f}")
+    print(f"Final Train R²: {final_train_r2:.4f}, Val R²: {final_val_r2:.4f}")
+    
+    print("\nChecks:")
     for check, passed in checks.items():
         status = "✅" if passed else "❌"
         print(f"{status} {check}: {passed}")
@@ -120,15 +143,17 @@ def check_model_performance(metrics_path='metrics.json'):
 
 
 if __name__ == "__main__":
-    # Create expectations
+    # Step 1: Create expectations
+    print("Step 1: Creating expectations...")
     validator = create_expectations()
-    print("Expectations created!")
     
-    # Validate sample data
+    # Step 2: Validate sample data (should pass)
+    print("\nStep 2: Validating good data...")
     test_df = create_sample_data(50)
     results = validate_data(test_df)
     
-    # Check model performance (if metrics exist)
+    # Step 3: Check model performance (if metrics exist)
+    print("\nStep 3: Checking model performance...")
     try:
         check_model_performance()
     except FileNotFoundError:

@@ -8,8 +8,16 @@ class StockDataset(Dataset):
     """PyTorch dataset for stock data"""
     
     def __init__(self, features, targets):
-        self.features = torch.FloatTensor(features)
-        self.targets = torch.FloatTensor(targets)
+        # Convert to float tensors, handling different input types
+        if isinstance(features, torch.Tensor):
+            self.features = features.float()
+        else:
+            self.features = torch.FloatTensor(features)
+            
+        if isinstance(targets, torch.Tensor):
+            self.targets = targets.float()
+        else:
+            self.targets = torch.FloatTensor(targets)
     
     def __len__(self):
         return len(self.features)

@@ -1,6 +1,7 @@
 import pytest
 import torch
 import pandas as pd
+import numpy as np
 from model import StockPriceModel
 from data import StockDataset, normalize_features, create_sample_data
 
@@ -36,13 +37,13 @@ def test_dataset_length():
 
 def test_dataset_getitem():
     """Test if dataset returns correct items"""
-    features = torch.tensor([[1, 2, 3, 4, 5, 6, 7]])
-    targets = torch.tensor([100])
+    features = torch.tensor([[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]])
+    targets = torch.tensor([100.0])
     dataset = StockDataset(features, targets)
     
     feature, target = dataset[0]
-    assert torch.equal(feature, features[0])
-    assert torch.equal(target, targets[0])
+    assert torch.allclose(feature, features[0])
+    assert torch.allclose(target, targets[0])
 
 
 def test_create_sample_data():
@@ -71,3 +72,35 @@ def test_normalize_features():
     # Check normalization (all features should be between 0 and 1)
     assert features.min() >= 0
     assert features.max() <= 1
+
+
+def test_calculate_mae():
+    """Test MAE calculation"""
+    # Import here to avoid circular imports
+    from train import calculate_mae
+    
+    predictions = torch.tensor([100.0, 150.0, 200.0])
+    targets = torch.tensor([110.0, 140.0, 190.0])
+    
+    mae = calculate_mae(predictions, targets)
+    expected_mae = 10.0  # Average of |10|, |10|, |10|
+    
+    assert abs(mae - expected_mae) < 0.01
+
+
+def test_calculate_r2():
+    """Test R² calculation"""
+    # Import here to avoid circular imports
+    from train import calculate_r2
+    
+    # Perfect prediction should give R² = 1
+    targets = torch.tensor([100.0, 200.0, 300.0])
+    perfect_predictions = targets.clone()
+    
+    r2_perfect = calculate_r2(perfect_predictions, targets)
+    assert abs(r2_perfect - 1.0) < 0.01
+    
+    # Mean prediction should give R² = 0
+    mean_predictions = torch.full_like(targets, targets.mean())
+    r2_mean = calculate_r2(mean_predictions, targets)
+    assert abs(r2_mean - 0.0) < 0.01
