@@ -2,48 +2,41 @@
 
 Minimal PyTorch regression model for predicting semiconductor stock prices.
 
-## Features
-- **Input**: PE ratio, dividend yield, market cap, trading volume, employee count, profit (8K), profit (10K)
-- **Output**: Stock price prediction
+# Demo Commands
 
-## Quick Start
-
-### Using Dev Container (Recommended)
-1. Open in VS Code
-2. Install Remote-Containers extension
-3. Reopen in Container
-
-### Manual Setup
-```bash
-pip install -r requirements.txt
-```
-
-## Usage
-
-### Train Model
+## Step 1: Train the Model
 ```bash
 python train.py
 ```
+Creates model.pth and metrics.json. The model will now learn patterns from correlated data.
 
-### Run Tests
+## Step 2: Run Unit Tests  
 ```bash
 pytest test_model.py -v
 ```
+All 8 tests should pass
 
-### Validate Data
+## Step 3: Validate Data
 ```bash
 python validation.py
 ```
+Shows clear summary:
+- Good data: PASSED
+- Bad data: FAILED (7 issues) <- This is correct!
+- Model performance metrics
 
-## Project Structure
-- `model.py` - Neural network definition
-- `data.py` - Data handling utilities
-- `train.py` - Training script
-- `test_model.py` - Unit tests
-- `validation.py` - Data validation & model health checks
+## Optional: Show Bad Data
+```bash
+python data_bad.py
+```
+Shows examples of problematic data
 
-## Model Architecture
-- Input Layer: 7 features
-- Hidden Layer 1: 32 neurons (ReLU)
-- Hidden Layer 2: 16 neurons (ReLU)
-- Output Layer: 1 neuron (price prediction)
+## Clean Start
+If you ran the old version, delete model.pth and metrics.json first:
+```bash
+rm -f model.pth metrics.json
+python train.py
+```
+
+## That's all
+Everything works out of the box with clear output.

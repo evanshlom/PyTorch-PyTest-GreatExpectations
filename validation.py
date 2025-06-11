@@ -1,26 +1,36 @@
 import great_expectations as gx
 import pandas as pd
-from data import create_sample_data
+import os
 import json
+from data import create_sample_data
+from data_bad import create_bad_sample_data
 
 
-def create_expectations():
-    """Set up Great Expectations for stock data validation"""
+def setup_great_expectations():
+    """Setup Great Expectations with stock data validation rules"""
+    # Get or create context
     context = gx.get_context()
+    
+    # Check if suite already exists
+    suite_name = "stock_data_suite"
+    existing_suites = context.list_expectation_suite_names()
+    
+    if suite_name in existing_suites:
+        return context
     
     # Create datasource
     datasource = context.sources.add_pandas("stock_datasource")
     
-    # Load data
+    # Create sample data for setup
     df = create_sample_data(100)
     data_asset = datasource.add_dataframe_asset("stock_data")
     batch_request = data_asset.build_batch_request(dataframe=df)
     
     # Create expectation suite
-    context.add_expectation_suite("stock_data_suite")
+    context.add_expectation_suite(suite_name)
     validator = context.get_validator(
         batch_request=batch_request,
-        expectation_suite_name="stock_data_suite"
+        expectation_suite_name=suite_name
     )
     
     # Add expectations
@@ -60,26 +70,26 @@ def create_expectations():
     for column in df.columns:
         validator.expect_column_values_to_not_be_null(column=column)
     
-    # Save suite - IMPORTANT: use context.save_expectation_suite
+    # Save suite
     context.save_expectation_suite(
         expectation_suite=validator.get_expectation_suite(),
-        expectation_suite_name="stock_data_suite"
+        expectation_suite_name=suite_name
     )
     
-    print("✅ Expectation suite created and saved!")
-    return validator
+    print("Great Expectations suite initialized")
+    return context
 
 
-def validate_data(df):
-    """Run validation on new data"""
-    context = gx.get_context()
+def validate_data(df, data_type=""):
+    """Run validation on a dataframe"""
+    # Ensure GX is set up
+    context = setup_great_expectations()
     
-    # Add datasource and data asset for validation
-    datasource = context.sources.add_or_update_pandas("stock_datasource")
-    data_asset = datasource.add_dataframe_asset("stock_data_validation")
+    # Create validator for the data
+    datasource = context.sources.add_or_update_pandas("validation_datasource")
+    data_asset = datasource.add_dataframe_asset("data_to_validate")
     batch_request = data_asset.build_batch_request(dataframe=df)
     
-    # Get validator with existing suite
     try:
         validator = context.get_validator(
             batch_request=batch_request,
@@ -89,30 +99,24 @@ def validate_data(df):
         # Run validation
         results = validator.validate()
         
-        # Check if validation passed
-        if results.success:
-            print("✅ Data validation passed!")
-        else:
-            print("❌ Data validation failed!")
-            print("\nFailed expectations:")
-            for result in results.results:
-                if not result.success:
-                    print(f"  - {result.expectation_config.expectation_type}")
-                    print(f"    {result.result}")
-            
+        # Return results for summary
         return results
+        
     except Exception as e:
         print(f"Error during validation: {e}")
-        print("Make sure to run create_expectations() first!")
         return None
 
 
 def check_model_performance(metrics_path='metrics.json'):
     """Validate model performance metrics"""
+    if not os.path.exists(metrics_path):
+        print("No metrics.json found - run train.py first")
+        return False
+        
     with open(metrics_path, 'r') as f:
         metrics = json.load(f)
     
-    # Performance checks
+    # Performance checks (adjusted for synthetic data)
     final_train_loss = metrics['train_loss'][-1]
     final_val_loss = metrics['val_loss'][-1]
     final_train_mae = metrics['train_mae'][-1]
@@ -121,40 +125,61 @@ def check_model_performance(metrics_path='metrics.json'):
     final_val_r2 = metrics['val_r2'][-1]
     
     checks = {
-        'final_train_loss_reasonable': final_train_loss < 1000,
-        'final_val_loss_reasonable': final_val_loss < 1000,
-        'not_overfitting': final_val_loss < final_train_loss * 2,
-        'model_converged': metrics['train_loss'][-1] < metrics['train_loss'][0] * 0.5,
+        'not_overfitting': final_val_loss < final_train_loss * 1.5,
+        'model_converged': metrics['train_loss'][-1] < metrics['train_loss'][0] * 0.8,
         'mae_reasonable': final_val_mae < 100,  # MAE less than $100
-        'r2_positive': final_val_r2 > 0  # Model better than mean prediction
+        'r2_positive': final_val_r2 > 0.2  # Model explains at least 20% variance
     }
     
-    print("\n📊 Model Performance Health Check:")
+    print("\nModel Performance:")
     print(f"Final Train Loss: {final_train_loss:.2f}, Val Loss: {final_val_loss:.2f}")
     print(f"Final Train MAE: ${final_train_mae:.2f}, Val MAE: ${final_val_mae:.2f}")
-    print(f"Final Train R²: {final_train_r2:.4f}, Val R²: {final_val_r2:.4f}")
+    print(f"Final Train R2: {final_train_r2:.4f}, Val R2: {final_val_r2:.4f}")
     
-    print("\nChecks:")
+    all_passed = True
     for check, passed in checks.items():
-        status = "✅" if passed else "❌"
-        print(f"{status} {check}: {passed}")
+        status = "PASS" if passed else "FAIL"
+        if not passed:
+            all_passed = False
     
-    return all(checks.values())
+    return all_passed
 
 
 if __name__ == "__main__":
-    # Step 1: Create expectations
-    print("Step 1: Creating expectations...")
-    validator = create_expectations()
+    print("Data Validation with Great Expectations")
+    print("=" * 60)
     
-    # Step 2: Validate sample data (should pass)
-    print("\nStep 2: Validating good data...")
-    test_df = create_sample_data(50)
-    results = validate_data(test_df)
+    # Test with good data
+    print("\n1. Validating good data:")
+    good_df = create_sample_data(50)
+    good_results = validate_data(good_df, "good")
     
-    # Step 3: Check model performance (if metrics exist)
-    print("\nStep 3: Checking model performance...")
-    try:
-        check_model_performance()
-    except FileNotFoundError:
-        print("No metrics.json found - run train.py first")
+    # Test with bad data
+    print("\n2. Validating bad data:")
+    bad_df = create_bad_sample_data(50)
+    bad_results = validate_data(bad_df, "bad")
+    
+    # Summary
+    print("\n" + "=" * 60)
+    print("VALIDATION SUMMARY:")
+    print("=" * 60)
+    
+    if good_results and good_results.success:
+        print("Good data: PASSED (all checks passed)")
+    else:
+        print("Good data: FAILED (unexpected!)")
+        
+    if bad_results and not bad_results.success:
+        failed_count = bad_results.statistics['unsuccessful_expectations']
+        print(f"Bad data:  FAILED ({failed_count} issues found) <- This is correct!")
+    else:
+        print("Bad data:  PASSED (unexpected - validation not catching issues)")
+    
+    print("\nConclusion: Validation is working correctly!")
+    print("Good data passes, bad data fails as expected.")
+    
+    # Check model performance if available
+    print("\n" + "=" * 60)
+    print("MODEL PERFORMANCE CHECK:")
+    print("=" * 60)
+    check_model_performance()

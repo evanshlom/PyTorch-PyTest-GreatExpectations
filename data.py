@@ -27,18 +27,44 @@ class StockDataset(Dataset):
 
 
 def create_sample_data(n_samples=100):
-    """Generate synthetic stock data for demo"""
+    """Generate synthetic stock data with correlations for demo"""
     np.random.seed(42)
     
+    # Create base features with some correlations
+    # Higher PE ratio tends to mean higher growth stocks = higher price
+    pe_ratio = np.random.uniform(10, 50, n_samples)
+    
+    # Market cap strongly correlates with stock price
+    market_cap = np.random.uniform(1e9, 1e11, n_samples)
+    
+    # Create other features
+    dividend_yield = np.random.uniform(0, 5, n_samples)
+    trading_volume = np.random.uniform(1e6, 1e8, n_samples)
+    employee_count = np.random.randint(1000, 50000, n_samples)
+    profit_8k = np.random.uniform(-1e8, 5e8, n_samples)
+    profit_10k = np.random.uniform(-1e8, 5e8, n_samples)
+    
+    # Create stock price with correlations
+    # Price = base + pe_contribution + market_cap_contribution + profit_contribution + noise
+    base_price = 100
+    pe_contribution = pe_ratio * 3  # Higher PE = higher price
+    market_cap_contribution = (market_cap / 1e9) * 2  # Bigger company = higher price
+    profit_contribution = (profit_10k / 1e8) * 10  # More profit = higher price
+    noise = np.random.normal(0, 20, n_samples)  # Some randomness
+    
+    stock_price = base_price + pe_contribution + market_cap_contribution + profit_contribution + noise
+    # Ensure positive prices
+    stock_price = np.maximum(stock_price, 10)
+    
     data = {
-        'pe_ratio': np.random.uniform(10, 50, n_samples),
-        'dividend_yield': np.random.uniform(0, 5, n_samples),
-        'market_cap': np.random.uniform(1e9, 1e11, n_samples),
-        'trading_volume': np.random.uniform(1e6, 1e8, n_samples),
-        'employee_count': np.random.randint(1000, 50000, n_samples),
-        'profit_8k': np.random.uniform(-1e8, 5e8, n_samples),
-        'profit_10k': np.random.uniform(-1e8, 5e8, n_samples),
-        'stock_price': np.random.uniform(50, 500, n_samples)
+        'pe_ratio': pe_ratio,
+        'dividend_yield': dividend_yield,
+        'market_cap': market_cap,
+        'trading_volume': trading_volume,
+        'employee_count': employee_count,
+        'profit_8k': profit_8k,
+        'profit_10k': profit_10k,
+        'stock_price': stock_price
     }
     
     return pd.DataFrame(data)
