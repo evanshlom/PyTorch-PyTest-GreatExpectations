@@ -1,58 +1,64 @@
 # PyTorch Stock Price Prediction
 
-Minimal PyTorch regression model for predicting semiconductor stock prices.
+Minimal PyTorch regression model with data validation using Great Expectations.
 
-# Demo Commands
+## Files
+- `model.py` - Neural network definition
+- `data.py` - Dataset and data utilities  
+- `data_bad.py` - Generate problematic data for testing
+- `train.py` - Training script with metrics
+- `test_model.py` - Unit tests
+- `validate_data.py` - Data quality validation (pre-training)
+- `validate_model.py` - Model performance validation (post-training)
+
+## Setup
+1. Open in VS Code
+2. Reopen in Dev Container when prompted
+3. Container will build with all dependencies
 
 ## Production Workflow
 
 ### Step 1: Run Unit Tests
 ```bash
-pytest test_model.py -v -s
+pytest test_model.py -v
 ```
-Verify code quality first - all 8 tests should pass with descriptive output.
+Verifies code quality - all 8 tests should pass.
 
-### Step 2: Validate Data Quality  
+### Step 2: Validate Data Quality
 ```bash
 python validate_data.py
 ```
-Check data quality BEFORE training:
-- Schema validation (8 required columns)
-- No null values allowed
-- Value range checks (no negatives)
-- Demo of bad data detection
+Checks data quality BEFORE training:
+- Schema validation
+- No null values
+- Value ranges
+- Shows what bad data looks like
 
 ### Step 3: Train Model
 ```bash
 python train.py
 ```
-Train only after confirming data quality. Shows Loss, MAE, and R² progress every 10 epochs.
+Trains model on validated data. Shows Loss, MAE, and R² metrics.
 
 ### Step 4: Validate Model Performance
 ```bash
 python validate_model.py
 ```
-Check model performance AFTER training:
-- Convergence: >20% loss reduction
-- Overfitting: Val/Train ratio <1.5
-- R² threshold: >0.1 (better than baseline)
-- MAE acceptability: <$100
-
-## Quick One-Liner
-```bash
-pytest test_model.py -v -s && python validate_data.py && python train.py && python validate_model.py
-```
+Checks model performance AFTER training:
+- Convergence criteria
+- Overfitting detection
+- R² threshold
+- MAE acceptability
 
 ## Clean Start
 ```bash
 rm -rf gx/ model.pth metrics.json
 ```
 
-## Expected Output
-- 8 unit tests pass with descriptions
-- Good data passes all checks
-- Bad data fails with detailed errors
-- Model converges with positive R²
-- All 4 performance criteria pass
+## Expected Results
+- Tests: All 8 pass with descriptive output
+- Data validation: Good data passes, bad data fails with details
+- Training: R² > 0.6 (model learns strong patterns)
+- Model validation: All 4 performance criteria pass
 
-That's the complete production workflow.
+Simple, clean, production-ready workflow.

@@ -110,6 +110,11 @@ if __name__ == "__main__":
     
     # Create and train model
     model = StockPriceModel()
+    print(f"Model architecture: {sum(p.numel() for p in model.parameters())} parameters")
+    print(f"Training on {len(train_loader.dataset)} samples")
+    print(f"Validating on {len(val_loader.dataset)} samples")
+    print("-" * 60)
+    
     metrics = train_model(model, train_loader, val_loader)
     
     # Save everything
